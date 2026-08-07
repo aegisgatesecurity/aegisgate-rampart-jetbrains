@@ -1,0 +1,65 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- AegisGate Rampart - JetBrains IDE Plugin Descriptor -->
+<idea-plugin>
+    <id>io.aegisgate.rampart</id>
+    <name>AegisGate Rampart</name>
+    <vendor email="security@aegisgatesecurity.io" url="https://aegisgatesecurity.io">AegisGate Security</vendor>
+    <description><![CDATA[
+    <p>AegisGate Rampart — Local AI Security Proxy Integration</p>
+    <p>Detects PII, secrets, API keys, XSS, and prompt injection in AI API traffic.</p>
+    <p><b>Privacy:</b> All detection happens locally. No prompt text stored. No PII forwarded.</p>
+    <ul>
+      <li>🔐 PII detection (SSN, credit cards, emails, phone numbers)</li>
+      <li>🔑 Secret detection (API keys, tokens, passwords)</li>
+      <li>⚔️ XSS detection in AI-generated code</li>
+      <li>🧠 Prompt injection detection</li>
+      <li>📋 Compliance checking</li>
+    </ul>
+    ]]></description>
+
+    <depends>com.intellij.modules.platform</depends>
+
+    <!-- Application-level components -->
+    <extensions defaultExtensionNs="com.intellij">
+        <!-- Status bar widget -->
+        <statusBarWidgetFactory id="RampartStatusBar"
+                                 implementationClass="io.aegisgate.rampart.RampartStatusBarWidgetFactory"
+                                 order="after Position"/>
+
+        <!-- Settings -->
+        <applicationConfigurable id="rampart.settings"
+                                 groupId="tools"
+                                 instance="io.aegisgate.rampart.RampartSettings"/>
+
+        <applicationService serviceImplementation="io.aegisgate.rampart.RampartSettingsState"/>
+
+        <!-- External annotator for detection highlights -->
+        <externalAnnotator implementationClass="io.aegisgate.rampart.RampartExternalAnnotator"
+                           language=""/>
+    </extensions>
+
+    <!-- Actions -->
+    <actions>
+        <group id="Rampart.Actions" text="Rampart" description="AegisGate Rampart Actions">
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+
+            <action id="Rampart.ScanCurrentFile"
+                    class="io.aegisgate.rampart.ScanCurrentFileAction"
+                    text="Scan Current File"
+                    description="Scan the current file for PII, secrets, and XSS">
+            </action>
+
+            <action id="Rampart.CheckConnection"
+                    class="io.aegisgate.rampart.CheckConnectionAction"
+                    text="Check Connection"
+                    description="Check if the Rampart proxy is reachable">
+            </action>
+
+            <action id="Rampart.OpenSettings"
+                    class="io.aegisgate.rampart.OpenSettingsAction"
+                    text="Rampart Settings..."
+                    description="Configure Rampart proxy settings">
+            </action>
+        </group>
+    </actions>
+</idea-plugin>

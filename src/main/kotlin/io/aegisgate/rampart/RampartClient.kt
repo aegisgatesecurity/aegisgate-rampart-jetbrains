@@ -23,7 +23,9 @@ import java.time.Duration
  * Talks ONLY to localhost. No external communications.
  * Uses java.net.http.HttpClient (JDK 11+ built-in, zero dependencies).
  */
-class RampartClient(private var baseUrl: String = DEFAULT_RAMPART_URL) {
+class RampartClient(url: String = DEFAULT_RAMPART_URL) {
+
+    private var baseUrl: String = url.trimEnd('/')
 
     private val logger = Logger.getInstance(RampartClient::class.java)
 
@@ -227,21 +229,25 @@ class RampartClient(private var baseUrl: String = DEFAULT_RAMPART_URL) {
     // =========================================================================
 
     private fun extractString(json: String, key: String): String? {
-        val pattern = "\"$key\""
-        val idx = json.indexOf(pattern) ?: return null
-        val colonIdx = json.indexOf(':', idx + pattern.length) ?: return null
-        val valueStart = json.indexOf('"', colonIdx) ?: return null
-        val valueEnd = json.indexOf('"', valueStart + 1) ?: return null
+        // Match "key": to avoid false matches (e.g., "missing" inside "missing_key")
+        val searchPattern = "\"$key\":"
+        val idx = json.indexOf(searchPattern)
+        if (idx < 0) return null
+        val colonIdx = idx + searchPattern.length - 1 // points to ':'
+        val valueStart = json.indexOf('"', colonIdx)
+        if (valueStart < 0) return null
+        val valueEnd = json.indexOf('"', valueStart + 1)
+        if (valueEnd < 0) return null
         return json.substring(valueStart + 1, valueEnd)
     }
 
     private fun extractInt(json: String, key: String): Int? = extractLong(json, key)?.toInt()
 
     private fun extractLong(json: String, key: String): Long? {
-        val pattern = "\"$key\""
-        val idx = json.indexOf(pattern) ?: return null
-        val colonIdx = json.indexOf(':', idx + pattern.length) ?: return null
-        var numStart = colonIdx + 1
+        val searchPattern = "\"$key\":"
+        val idx = json.indexOf(searchPattern)
+        if (idx < 0) return null
+        var numStart = idx + searchPattern.length
         while (numStart < json.length && (json[numStart] == ' ' || json[numStart] == '\t')) numStart++
         if (numStart >= json.length) return null
         var numEnd = numStart
@@ -251,10 +257,10 @@ class RampartClient(private var baseUrl: String = DEFAULT_RAMPART_URL) {
     }
 
     private fun extractDouble(json: String, key: String): Double? {
-        val pattern = "\"$key\""
-        val idx = json.indexOf(pattern) ?: return null
-        val colonIdx = json.indexOf(':', idx + pattern.length) ?: return null
-        var numStart = colonIdx + 1
+        val searchPattern = "\"$key\":"
+        val idx = json.indexOf(searchPattern)
+        if (idx < 0) return null
+        var numStart = idx + searchPattern.length
         while (numStart < json.length && (json[numStart] == ' ' || json[numStart] == '\t')) numStart++
         if (numStart >= json.length) return null
         var numEnd = numStart
@@ -264,10 +270,10 @@ class RampartClient(private var baseUrl: String = DEFAULT_RAMPART_URL) {
     }
 
     private fun extractBool(json: String, key: String): Boolean? {
-        val pattern = "\"$key\""
-        val idx = json.indexOf(pattern) ?: return null
-        val colonIdx = json.indexOf(':', idx + pattern.length) ?: return null
-        val rest = json.substring(colonIdx + 1).trimStart()
+        val searchPattern = "\"$key\":"
+        val idx = json.indexOf(searchPattern)
+        if (idx < 0) return null
+        val rest = json.substring(idx + searchPattern.length).trimStart()
         return when {
             rest.startsWith("true") -> true
             rest.startsWith("false") -> false
@@ -276,11 +282,13 @@ class RampartClient(private var baseUrl: String = DEFAULT_RAMPART_URL) {
     }
 
     private fun extractStringArray(json: String, key: String): List<String>? {
-        val pattern = "\"$key\""
-        val idx = json.indexOf(pattern) ?: return null
-        val colonIdx = json.indexOf(':', idx + pattern.length) ?: return null
-        val arrStart = json.indexOf('[', colonIdx) ?: return null
-        val arrEnd = json.indexOf(']', arrStart) ?: return null
+        val searchPattern = "\"$key\":"
+        val idx = json.indexOf(searchPattern)
+        if (idx < 0) return null
+        val arrStart = json.indexOf('[', idx + searchPattern.length)
+        if (arrStart < 0) return null
+        val arrEnd = json.indexOf(']', arrStart)
+        if (arrEnd < 0) return null
         val content = json.substring(arrStart + 1, arrEnd)
         return content.split(",")
             .map { it.trim().removeSurrounding("\"") }

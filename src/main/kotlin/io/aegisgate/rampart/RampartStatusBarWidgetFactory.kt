@@ -2,17 +2,12 @@
 // =========================================================================
 // AegisGate Rampart - Status Bar Widget Factory
 // =========================================================================
-//
-// Creates the RampartStatusBar widget for the IDE status bar.
-// Registered in plugin.xml as an extension.
-//
-// =========================================================================
 
 package io.aegisgate.rampart
 
+import com.intellij.openapi.Disposable
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.StatusBarWidget
-import com.intellij.openapi.wm.impl.status.EditorMessagesWidget
 
 /**
  * Factory for creating RampartStatusBar widgets.
@@ -34,7 +29,7 @@ class RampartStatusBarWidgetFactory : com.intellij.openapi.wm.StatusBarWidgetFac
 
     override fun disposeWidget(widget: StatusBarWidget) {
         if (widget is Disposable) {
-            widget.dispose()
+            (widget as Disposable).dispose()
         }
     }
 }

@@ -6,34 +6,9 @@
 // Local HTTPS proxy integration for detecting PII/secrets/XSS in AI API traffic.
 // Talks ONLY to localhost. Zero external communications. Zero PII stored.
 //
-// Architecture:
-//   - RampartClient: HTTP client to localhost proxy (/detect, /stats)
-//   - RampartAnnotator: Inline highlighting with severity icons
-//   - RampartAutoScan: Background document-change listener → auto-scan
-//   - RampartStatusBar: Live connection status in IDE status bar
-//
-// Privacy (12 non-negotiables):
-//   - No prompt text stored or sent anywhere
-//   - No PII stored or forwarded
-//   - Detection happens locally, results are for the user only
-//   - Zero external dependencies
-//
 // =========================================================================
 
 package io.aegisgate.rampart
-
-import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
-import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.editor.event.DocumentEvent
-import com.intellij.openapi.editor.event.DocumentListener
-import com.intellij.openapi.fileEditor.FileDocumentManager
-import com.intellij.openapi.project.Project
-import com.intellij.openapi.project.ProjectManagerListener
-import com.intellij.openapi.startup.ProjectActivity
-import com.intellij.openapi.wm.StatusBarWidget
-import com.intellij.openapi.wm.impl.status.EditorMessagesWidget
-import com.intellij.psi.PsiManager
-import java.util.concurrent.atomic.AtomicBoolean
 
 // =========================================================================
 // Plugin descriptor constants
@@ -69,7 +44,7 @@ enum class RampartSeverity(val level: Int, val icon: String) {
 
     companion object {
         fun fromString(s: String): RampartSeverity =
-            values().find { it.name.equals(s, ignoreCase = true) } ?: INFO
+            entries.find { it.name.equals(s, ignoreCase = true) } ?: INFO
     }
 }
 

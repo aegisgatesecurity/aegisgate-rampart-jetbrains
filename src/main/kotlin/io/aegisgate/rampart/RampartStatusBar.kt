@@ -4,7 +4,7 @@
 // =========================================================================
 //
 // Shows live connection status and detection stats in the IDE status bar.
-// Mirrors the VS Code extension's StatusBarManager behavior.
+// Auto-refreshes every 30 seconds.
 //
 // =========================================================================
 
@@ -16,63 +16,48 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.StatusBarWidget
 import com.intellij.openapi.wm.WindowManager
 import com.intellij.util.Alarm
-import java.util.concurrent.atomic.AtomicReference
 
 /**
  * Status bar widget showing Rampart proxy connection status.
  *
  * Displays:
- *   - 🔴 Rampart: Disconnected (proxy unreachable)
- *   - 🟢 Rampart: Connected (proxy reachable, shows stats)
- *   - 🟡 Rampart: Checking... (during connection check)
- *
- * Auto-refreshes every 30 seconds (matching VS Code extension).
+ *   - 🔴 Rampart: Disconnected
+ *   - 🟢 Rampart: Connected (with stats)
+ *   - 🟡 Rampart: Checking...
  */
 class RampartStatusBar(private val project: Project) : StatusBarWidget, Disposable {
 
     private val logger = Logger.getInstance(RampartStatusBar::class.java)
     private val client = RampartClient()
     private val alarm = Alarm(this)
-    private val statusText = AtomicReference("🟡 Rampart: Checking...")
-
+    private var currentStatus = "🟡 Rampart: Checking..."
     private var refreshIntervalMs = 30_000L
 
     override fun ID(): String = "RampartStatusBar"
 
-    override fun install() {
-        // Initial check
+    override fun install(statusBar: com.intellij.openapi.wm.StatusBar) {
         refreshStatus()
-
-        // Schedule periodic refreshes
         scheduleRefresh()
     }
 
     override fun getPresentation(): StatusBarWidget.WidgetPresentation {
-        return object : StatusBarWidget.TextPresentation {
-            override fun getText(): String = statusText.get()
-            override fun getTooltipText(): String = "AegisGate Rampart — Local AI Security Proxy"
-            override fun getClickAction(): Runnable? = null
-        }
+        return RampartStatusBarPresentation(this)
     }
 
     override fun dispose() {
         alarm.cancelAllRequests()
     }
 
-    /**
-     * Set the Rampart proxy URL.
-     */
     fun setUrl(url: String) {
         client.setUrl(url)
         refreshStatus()
     }
 
-    /**
-     * Set the refresh interval in milliseconds.
-     */
     fun setRefreshIntervalMs(ms: Long) {
         refreshIntervalMs = ms
     }
+
+    fun getStatus(): String = currentStatus
 
     // =========================================================================
     // Private
@@ -83,20 +68,17 @@ class RampartStatusBar(private val project: Project) : StatusBarWidget, Disposab
             if (client.isAlive()) {
                 val stats = client.getStats()
                 if (stats != null) {
-                    val detections = stats.detections
-                    val blocked = stats.blockedRequests
-                    statusText.set("🟢 Rampart: ${detections} detected, ${blocked} blocked")
+                    currentStatus = "🟢 Rampart: ${stats.detections} detected, ${stats.blockedRequests} blocked"
                 } else {
-                    statusText.set("🟢 Rampart: Connected")
+                    currentStatus = "🟢 Rampart: Connected"
                 }
             } else {
-                statusText.set("🔴 Rampart: Disconnected")
+                currentStatus = "🔴 Rampart: Disconnected"
             }
         } catch (_: Exception) {
-            statusText.set("🔴 Rampart: Error")
+            currentStatus = "🔴 Rampart: Error"
         }
 
-        // Update the status bar
         updateWidget()
     }
 
@@ -114,5 +96,13 @@ class RampartStatusBar(private val project: Project) : StatusBarWidget, Disposab
             refreshStatus()
             scheduleRefresh()
         }, refreshIntervalMs)
+    }
+
+    private class RampartStatusBarPresentation(private val widget: RampartStatusBar) :
+        StatusBarWidget.TextPresentation {
+
+        override fun getText(): String = widget.getStatus()
+        override fun getTooltipText(): String = "AegisGate Rampart — Local AI Security Proxy"
+        override fun getAlignment(): Float = java.awt.Component.RIGHT_ALIGNMENT.toFloat()
     }
 }

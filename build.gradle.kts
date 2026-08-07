@@ -40,9 +40,6 @@ tasks {
         targetCompatibility = "17"
     }
 
-    // Build the plugin .zip
-    buildSearchableOptions = false   // No settings to index
-
     patchPluginXml {
         sinceBuild.set("232")        // IDE build 2023.2+
         untilBuild.set("242.*")      // Compatible through 2024.2.x

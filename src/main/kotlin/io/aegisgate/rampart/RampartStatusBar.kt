@@ -68,7 +68,12 @@ class RampartStatusBar(private val project: Project) : StatusBarWidget, Disposab
             if (client.isAlive()) {
                 val stats = client.getStats()
                 if (stats != null) {
-                    currentStatus = "🟢 Rampart: ${stats.detections} detected, ${stats.blockedRequests} blocked"
+                    val mode = stats.mode ?: "monitor"
+                    if (mode == "block") {
+                        currentStatus = "Rampart: BLOCK 🚫"
+                    } else {
+                        currentStatus = "Rampart: MONITOR"
+                    }
                 } else {
                     currentStatus = "🟢 Rampart: Connected"
                 }
